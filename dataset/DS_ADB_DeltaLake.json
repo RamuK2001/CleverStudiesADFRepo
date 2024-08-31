@@ -1,0 +1,13 @@
+{
+	"name": "DS_ADB_DeltaLake",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ADB_DeltaLake",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureDatabricksDeltaLakeDataset",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

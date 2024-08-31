@@ -1,0 +1,23 @@
+{
+	"name": "LS_ADLS",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobStorage",
+		"typeProperties": {
+			"connectionString": "DefaultEndpointsProtocol=https;AccountName=cleverstudiesadls;EndpointSuffix=core.windows.net;",
+			"accountKey": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KeyVault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "ADLS-Access-Key"
+			}
+		},
+		"connectVia": {
+			"referenceName": "CleverStudiesSHIR",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

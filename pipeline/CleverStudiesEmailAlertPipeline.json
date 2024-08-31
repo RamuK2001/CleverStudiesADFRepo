@@ -1,0 +1,35 @@
+{
+	"name": "CleverStudiesEmailAlertPipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "Send Email",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"url": "https://prod-49.eastus2.logic.azure.com:443/workflows/1288f9e73b1f4570adb5c15655184320/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=GyAtW5RRwdTtATrQYQoSo3TC_N_o2bXc1LiRWuKiUVg",
+					"connectVia": {
+						"referenceName": "CleverStudiesSHIR",
+						"type": "IntegrationRuntimeReference"
+					},
+					"body": {
+						"value": "{\n\"email_to\": \"ramukarnati2001@gmail.com\",\n\"email_subject\": \"Clever Studies Pipeline Alert\",\n\"email_body\": \"\n<html>\n    <head>\n    </head>\n    <body>\n        Hello,\n        <br><br>\n        Please find the pipeline run details below:\n        <br><br>\n        <table style = 'width: 60%; border: 1px solid black;'>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Parameter</th>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Value</th>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Pipeline Name</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().Pipeline}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Status</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse; color: green'><b>Successful</b></td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Trigger Type</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().TriggerType}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Id</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().RunId}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Start</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{formatDateTime(pipeline().TriggerTime,'dd-MM-yyyy hh:mm:ss')}</td>\n            </tr>\n        </table>\n        <br><br>\n        Clever Studies\n    </body>\n</html>\n\"\n}",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2024-08-23T20:08:38Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

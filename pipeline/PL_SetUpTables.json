@@ -1,0 +1,127 @@
+{
+	"name": "PL_SetUpTables",
+	"properties": {
+		"activities": [
+			{
+				"name": "Create Schemas",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/SalesAnalysis/CreateTablesAndSchemas/CreateSchemas",
+					"baseParameters": {
+						"environment_name": {
+							"value": "@pipeline().globalParameters.environment",
+							"type": "Expression"
+						},
+						"database_name": {
+							"value": "@pipeline().globalParameters.database_name",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_ADB",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Create Tables",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Create Schemas",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/SalesAnalysis/CreateTablesAndSchemas/CreateTables",
+					"baseParameters": {
+						"environment_name": {
+							"value": "@pipeline().globalParameters.environment",
+							"type": "Expression"
+						},
+						"database_name": {
+							"value": "@pipeline().globalParameters.database_name",
+							"type": "Expression"
+						},
+						"storage_account_name": {
+							"value": "@pipeline().parameters.storage_account_name",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_ADB",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Insert Metadata",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Create Tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/SalesAnalysis/TableInsertionNotebooks/MetadataInsert",
+					"baseParameters": {
+						"environment_name": {
+							"value": "@pipeline().globalParameters.environment",
+							"type": "Expression"
+						},
+						"database_name": {
+							"value": "@pipeline().globalParameters.database_name",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_ADB",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"storage_account_name": {
+				"type": "string",
+				"defaultValue": "cleverstudiesadls"
+			}
+		},
+		"folder": {
+			"name": "SalesAnalysis"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-08-24T19:13:58Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,24 @@
+{
+	"name": "LS_ADB_DeltaLake",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureDatabricksDeltaLake",
+		"typeProperties": {
+			"domain": "https://adb-687061496925936.16.azuredatabricks.net",
+			"clusterId": "0809-185342-fc81fwfy",
+			"accessToken": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KeyVault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "ADB-PAT-Token"
+			}
+		},
+		"connectVia": {
+			"referenceName": "CleverStudiesSHIR",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

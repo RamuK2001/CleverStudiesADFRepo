@@ -1,0 +1,44 @@
+{
+	"name": "LS_SFTP",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"parameters": {
+			"host": {
+				"type": "string"
+			},
+			"port": {
+				"type": "int"
+			},
+			"username": {
+				"type": "string"
+			},
+			"secretname": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Sftp",
+		"typeProperties": {
+			"host": "@{linkedService().host}",
+			"port": "@linkedService().port",
+			"skipHostKeyValidation": true,
+			"authenticationType": "Basic",
+			"userName": "@{linkedService().username}",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KeyVault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": {
+					"value": "@linkedService().secretname",
+					"type": "Expression"
+				}
+			}
+		},
+		"connectVia": {
+			"referenceName": "CleverStudiesSHIR",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

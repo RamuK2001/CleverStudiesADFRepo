@@ -1,0 +1,80 @@
+{
+	"name": "DS_SFTP",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_SFTP",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"host": {
+					"value": "@dataset().host",
+					"type": "Expression"
+				},
+				"port": {
+					"value": "@dataset().port",
+					"type": "Expression"
+				},
+				"username": {
+					"value": "@dataset().username",
+					"type": "Expression"
+				},
+				"secretname": {
+					"value": "@dataset().secretname",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"folder": {
+				"type": "string"
+			},
+			"file": {
+				"type": "string"
+			},
+			"host": {
+				"type": "string"
+			},
+			"port": {
+				"type": "int"
+			},
+			"username": {
+				"type": "string"
+			},
+			"secretname": {
+				"type": "string"
+			},
+			"delimiter": {
+				"type": "string"
+			},
+			"header": {
+				"type": "bool"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "SftpLocation",
+				"fileName": {
+					"value": "@dataset().file",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().folder",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": {
+				"value": "@dataset().delimiter",
+				"type": "Expression"
+			},
+			"escapeChar": "\\",
+			"firstRowAsHeader": {
+				"value": "@dataset().header",
+				"type": "Expression"
+			},
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,33 @@
+{
+	"name": "CleverStudiesADBPipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "NotebookActivity",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/CleverStudiesNotebook",
+					"baseParameters": {
+						"parameter1": "Value passed in ADF"
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_ADB",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2024-08-09T23:07:30Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
