@@ -1,0 +1,24 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "CleverStudiesADF"
+		},
+		"LS_ADLS_connectionString": {
+			"value": "DefaultEndpointsProtocol=https;AccountName=cleverstudiesadls;EndpointSuffix=core.windows.net;"
+		},
+		"LS_ADB_properties_typeProperties_existingClusterId": {
+			"value": "0809-185342-fc81fwfy"
+		},
+		"LS_KeyVault_properties_typeProperties_baseUrl": {
+			"value": "https://CleverStudiesKeyVault.vault.azure.net/"
+		},
+		"LS_SFTP_properties_typeProperties_host": {
+			"value": "@{linkedService().host}"
+		},
+		"LS_SFTP_properties_typeProperties_userName": {
+			"value": "@{linkedService().username}"
+		}
+	}
+}

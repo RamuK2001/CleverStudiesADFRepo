@@ -1,0 +1,2236 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "CleverStudiesADF"
+		},
+		"LS_ADLS_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'LS_ADLS'",
+			"defaultValue": "DefaultEndpointsProtocol=https;AccountName=cleverstudiesadls;EndpointSuffix=core.windows.net;"
+		},
+		"LS_ADB_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0809-185342-fc81fwfy"
+		},
+		"LS_KeyVault_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://CleverStudiesKeyVault.vault.azure.net/"
+		},
+		"LS_SFTP_properties_typeProperties_host": {
+			"type": "string",
+			"defaultValue": "@{linkedService().host}"
+		},
+		"LS_SFTP_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "@{linkedService().username}"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/CleverStudiesADBPipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "NotebookActivity",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/CleverStudiesNotebook",
+							"baseParameters": {
+								"parameter1": "Value passed in ADF"
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_ADB",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-08-09T23:07:30Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_ADB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CleverStudiesCopyPipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Wait1",
+						"type": "Wait",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"waitTimeInSeconds": 1
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-08-09T23:00:25Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CleverStudiesEmailAlertPipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Send Email",
+						"type": "WebActivity",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "POST",
+							"headers": {},
+							"url": "https://prod-49.eastus2.logic.azure.com:443/workflows/1288f9e73b1f4570adb5c15655184320/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=GyAtW5RRwdTtATrQYQoSo3TC_N_o2bXc1LiRWuKiUVg",
+							"connectVia": {
+								"referenceName": "CleverStudiesSHIR",
+								"type": "IntegrationRuntimeReference"
+							},
+							"body": {
+								"value": "{\n\"email_to\": \"ramukarnati2001@gmail.com\",\n\"email_subject\": \"Clever Studies Pipeline Alert\",\n\"email_body\": \"\n<html>\n    <head>\n    </head>\n    <body>\n        Hello,\n        <br><br>\n        Please find the pipeline run details below:\n        <br><br>\n        <table style = 'width: 60%; border: 1px solid black;'>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Parameter</th>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Value</th>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Pipeline Name</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().Pipeline}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Status</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse; color: green'><b>Successful</b></td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Trigger Type</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().TriggerType}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Id</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().RunId}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Start</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{formatDateTime(pipeline().TriggerTime,'dd-MM-yyyy hh:mm:ss')}</td>\n            </tr>\n        </table>\n        <br><br>\n        Clever Studies\n    </body>\n</html>\n\"\n}",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-08-23T20:08:38Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/CleverStudiesSHIR')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_SalesAnalysis')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Metadata",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureDatabricksDeltaLakeSource",
+								"query": {
+									"value": "Select tbl.JobID, tbl.JobName, tbl.LoadType, tbl.SubJobType, src.HostName, src.Port, src.UserName, src.PasswordSecretName, src.ADLSName, stf.SourceFilePath, stf.SourceFileName, stf.TargetContainerName, stf.TargetFilePath, stf.TargetFileName, stf.ArchiveSourceFilePath, stf.ArchiveSourceFileName, stf.ArchiveTargetFilePath, stf.ArchiveTargetFileName, stf.Header, stf.Delimiter, tbl.BronzeTableName, tbl.BronzeTableQuery, tbl.SilverTableName, tbl.SilverTableQuery, tbl.GoldTableName, tbl.GoldTableQuery, tbl.ExecutionOrder from @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.table_load_metadata tbl left join @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.source_target_file_metadata stf on tbl.JobID = stf.JobID and tbl.SourceFilePrefix = stf.SourceFilePrefix left join @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.source_metadata src on tbl.JobID = src.JobID where tbl.JobID = @{pipeline().parameters.JobID} order by tbl.ExecutionOrder",
+									"type": "Expression"
+								}
+							},
+							"dataset": {
+								"referenceName": "DS_ADB_DeltaLake",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "Load Bronze Tables",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Get Metadata",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@take(activity('Get Metadata').output.value,6)",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Check Whether File Exists",
+									"type": "GetMetadata",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataset": {
+											"referenceName": "DS_SFTP",
+											"type": "DatasetReference",
+											"parameters": {
+												"folder": {
+													"value": "@item().SourceFilePath",
+													"type": "Expression"
+												},
+												"file": {
+													"value": "@item().SourceFileName",
+													"type": "Expression"
+												},
+												"host": {
+													"value": "@item().HostName",
+													"type": "Expression"
+												},
+												"port": {
+													"value": "@item().Port",
+													"type": "Expression"
+												},
+												"username": {
+													"value": "@item().UserName",
+													"type": "Expression"
+												},
+												"secretname": {
+													"value": "@item().PasswordSecretName",
+													"type": "Expression"
+												},
+												"delimiter": {
+													"value": "@item().Delimiter",
+													"type": "Expression"
+												},
+												"header": {
+													"value": "@item().Header",
+													"type": "Expression"
+												}
+											}
+										},
+										"fieldList": [
+											"exists"
+										],
+										"storeSettings": {
+											"type": "SftpReadSettings",
+											"recursive": true,
+											"enablePartitionDiscovery": false,
+											"disableChunking": false
+										},
+										"formatSettings": {
+											"type": "DelimitedTextReadSettings"
+										}
+									}
+								},
+								{
+									"name": "If Condition1",
+									"type": "IfCondition",
+									"dependsOn": [
+										{
+											"activity": "Check Whether File Exists",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@activity('Check Whether File Exists').output.exists",
+											"type": "Expression"
+										},
+										"ifFalseActivities": [
+											{
+												"name": "File Not Found Email",
+												"type": "WebActivity",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"method": "POST",
+													"headers": {},
+													"url": {
+														"value": "@pipeline().globalParameters.email_logic_app_url",
+														"type": "Expression"
+													},
+													"body": {
+														"value": "{\n\"email_to\": \"@{pipeline().globalParameters.email_to}\",\n\"email_subject\": \"[@{toUpper(pipeline().globalParameters.environment)}][@{item().JobName}]:[Failed]\",\n\"email_body\": \"\n<html>\n    <head>\n    </head>\n    <body>\n        Hello,\n        <br><br>\n        Please find the pipeline run details below:\n        <br><br>\n        <table style = 'width: 60%; border: 1px solid black;'>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Parameter</th>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Value</th>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Job Name</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{item().JobName}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Status</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse; color: red'>Failed</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Trigger Type</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().TriggerType}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Id</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().RunId}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Start</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{formatDateTime(pipeline().TriggerTime,'dd-MM-yyyy hh:mm:ss')}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Error</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'><b>@{item().SourceFileName} file not found in the source</b></td>\n            </tr>\n        </table>\n        <br><br>\n        Clever Studies\n    </body>\n</html>\n\"\n}",
+														"type": "Expression"
+													}
+												}
+											},
+											{
+												"name": "Fail Pipeline",
+												"type": "Fail",
+												"dependsOn": [
+													{
+														"activity": "File Not Found Email",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													},
+													{
+														"activity": "File Not Found Load Control Log",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"message": {
+														"value": "@{item().TargetFileName} file not found.",
+														"type": "Expression"
+													},
+													"errorCode": "404"
+												}
+											},
+											{
+												"name": "File Not Found Load Control Log",
+												"type": "Lookup",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "AzureDatabricksDeltaLakeSource",
+														"query": {
+															"value": "Insert into @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.load_control_log Values (\"@{pipeline().RunId}\",\"@{activity('Get Metadata').output.value[0].JobName}\",\"Source File Not Found\",\"@{item().SourceFileName} file not found in the source\",current_timestamp())",
+															"type": "Expression"
+														}
+													},
+													"dataset": {
+														"referenceName": "DS_ADB_DeltaLake",
+														"type": "DatasetReference",
+														"parameters": {}
+													},
+													"firstRowOnly": false
+												}
+											}
+										],
+										"ifTrueActivities": [
+											{
+												"name": "Copy From SFTP to ADLS",
+												"type": "Copy",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "DelimitedTextSource",
+														"storeSettings": {
+															"type": "SftpReadSettings",
+															"recursive": false,
+															"enablePartitionDiscovery": false,
+															"disableChunking": false
+														},
+														"formatSettings": {
+															"type": "DelimitedTextReadSettings"
+														}
+													},
+													"sink": {
+														"type": "DelimitedTextSink",
+														"storeSettings": {
+															"type": "AzureBlobStorageWriteSettings"
+														},
+														"formatSettings": {
+															"type": "DelimitedTextWriteSettings",
+															"quoteAllText": true,
+															"fileExtension": ".txt"
+														}
+													},
+													"enableStaging": false,
+													"translator": {
+														"type": "TabularTranslator",
+														"typeConversion": true,
+														"typeConversionSettings": {
+															"allowDataTruncation": true,
+															"treatBooleanAsNumber": false
+														}
+													}
+												},
+												"inputs": [
+													{
+														"referenceName": "DS_SFTP",
+														"type": "DatasetReference",
+														"parameters": {
+															"folder": {
+																"value": "@item().SourceFilePath",
+																"type": "Expression"
+															},
+															"file": {
+																"value": "@item().SourceFileName",
+																"type": "Expression"
+															},
+															"host": {
+																"value": "@item().HostName",
+																"type": "Expression"
+															},
+															"port": {
+																"value": "@item().Port",
+																"type": "Expression"
+															},
+															"username": {
+																"value": "@item().UserName",
+																"type": "Expression"
+															},
+															"secretname": {
+																"value": "@item().PasswordSecretName",
+																"type": "Expression"
+															},
+															"delimiter": {
+																"value": "@item().Delimiter",
+																"type": "Expression"
+															},
+															"header": {
+																"value": "@item().Header",
+																"type": "Expression"
+															}
+														}
+													}
+												],
+												"outputs": [
+													{
+														"referenceName": "DS_ADLS_SalesAnalysis",
+														"type": "DatasetReference",
+														"parameters": {
+															"container": {
+																"value": "@item().TargetContainerName",
+																"type": "Expression"
+															},
+															"folder": {
+																"value": "@item().TargetFilePath",
+																"type": "Expression"
+															},
+															"file": {
+																"value": "@item().TargetFileName",
+																"type": "Expression"
+															},
+															"header": {
+																"value": "@item().header",
+																"type": "Expression"
+															},
+															"delimiter": {
+																"value": "@item().Delimiter",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											},
+											{
+												"name": "Load Bronze Table",
+												"type": "DatabricksNotebook",
+												"dependsOn": [
+													{
+														"activity": "Copy From SFTP to ADLS",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"notebookPath": "/SalesAnalysis/TableInsertionNotebooks/LoadBronzeTables",
+													"baseParameters": {
+														"database_name": {
+															"value": "@pipeline().globalParameters.database_name",
+															"type": "Expression"
+														},
+														"environment_name": {
+															"value": "@pipeline().globalParameters.environment",
+															"type": "Expression"
+														},
+														"storage_account_name": {
+															"value": "@item().ADLSName",
+															"type": "Expression"
+														},
+														"container_name": {
+															"value": "@item().TargetContainerName",
+															"type": "Expression"
+														},
+														"file_path": {
+															"value": "@item().TargetFilePath",
+															"type": "Expression"
+														},
+														"file_name": {
+															"value": "@item().TargetFileName",
+															"type": "Expression"
+														},
+														"table_name": {
+															"value": "@item().BronzeTableName",
+															"type": "Expression"
+														},
+														"load_id": {
+															"value": "@pipeline().RunId",
+															"type": "Expression"
+														},
+														"job_name": {
+															"value": "@item().JobName",
+															"type": "Expression"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_ADB",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "Copy Successful Load Control Log",
+												"type": "Lookup",
+												"dependsOn": [
+													{
+														"activity": "Copy From SFTP to ADLS",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "AzureDatabricksDeltaLakeSource",
+														"query": {
+															"value": "Insert into @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.load_control_log Values (\"@{pipeline().RunId}\",\"@{activity('Get Metadata').output.value[0].JobName}\",\"Copy Source File to ADLS\",\"Copied @{item().SourceFileName} file to target location in ADLS successfully\",current_timestamp())",
+															"type": "Expression"
+														}
+													},
+													"dataset": {
+														"referenceName": "DS_ADB_DeltaLake",
+														"type": "DatasetReference",
+														"parameters": {}
+													},
+													"firstRowOnly": false
+												}
+											},
+											{
+												"name": "Copy Failure Load Control Log",
+												"type": "Lookup",
+												"dependsOn": [
+													{
+														"activity": "Copy From SFTP to ADLS",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "AzureDatabricksDeltaLakeSource",
+														"query": {
+															"value": "Insert into @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.load_control_log Values (\"@{pipeline().RunId}\",\"@{activity('Get Metadata').output.value[0].JobName}\",\"Copy Source File to ADLS Failed\",\"Copy @{item().SourceFileName} file failed. Error: @{activity('Copy From SFTP to ADLS').error.message}\",current_timestamp())",
+															"type": "Expression"
+														}
+													},
+													"dataset": {
+														"referenceName": "DS_ADB_DeltaLake",
+														"type": "DatasetReference",
+														"parameters": {}
+													},
+													"firstRowOnly": false
+												}
+											},
+											{
+												"name": "Load Bronze Table Failed Load Control Log",
+												"type": "Lookup",
+												"dependsOn": [
+													{
+														"activity": "Load Bronze Table",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "AzureDatabricksDeltaLakeSource",
+														"query": {
+															"value": "Insert into @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.load_control_log Values (\"@{pipeline().RunId}\",\"@{activity('Get Metadata').output.value[0].JobName}\",\"Bronze table load failed for @{item().BronzeTableName} table\",\"Error: @{replace(activity('Load Bronze Table').output.runError,'\"','''')}\",current_timestamp())",
+															"type": "Expression"
+														}
+													},
+													"dataset": {
+														"referenceName": "DS_ADB_DeltaLake",
+														"type": "DatasetReference",
+														"parameters": {}
+													},
+													"firstRowOnly": false
+												}
+											},
+											{
+												"name": "Copy Failed Email",
+												"type": "WebActivity",
+												"dependsOn": [
+													{
+														"activity": "Copy From SFTP to ADLS",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"method": "POST",
+													"headers": {},
+													"url": {
+														"value": "@pipeline().globalParameters.email_logic_app_url",
+														"type": "Expression"
+													},
+													"body": {
+														"value": "{\n\"email_to\": \"@{pipeline().globalParameters.email_to}\",\n\"email_subject\": \"[@{toUpper(pipeline().globalParameters.environment)}][@{item().JobName}]:[Failed]\",\n\"email_body\": \"\n<html>\n    <head>\n    </head>\n    <body>\n        Hello,\n        <br><br>\n        Please find the pipeline run details below:\n        <br><br>\n        <table style = 'width: 60%; border: 1px solid black;'>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Parameter</th>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Value</th>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Job Name</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{item().JobName}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Status</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse; color: red'>Failed</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Trigger Type</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().TriggerType}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Id</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().RunId}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Start</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{formatDateTime(pipeline().TriggerTime,'dd-MM-yyyy hh:mm:ss')}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Error</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'><b>@{activity('Copy From SFTP to ADLS').error.message}</b></td>\n            </tr>\n        </table>\n        <br><br>\n        Clever Studies\n    </body>\n</html>\n\"\n}",
+														"type": "Expression"
+													}
+												}
+											},
+											{
+												"name": "Load Bronze Table Failed Email",
+												"type": "WebActivity",
+												"dependsOn": [
+													{
+														"activity": "Load Bronze Table",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"method": "POST",
+													"headers": {},
+													"url": {
+														"value": "@pipeline().globalParameters.email_logic_app_url",
+														"type": "Expression"
+													},
+													"body": {
+														"value": "{\n\"email_to\": \"@{pipeline().globalParameters.email_to}\",\n\"email_subject\": \"[@{toUpper(pipeline().globalParameters.environment)}][@{item().JobName}]:[Failed]\",\n\"email_body\": \"\n<html>\n    <head>\n    </head>\n    <body>\n        Hello,\n        <br><br>\n        Please find the pipeline run details below:\n        <br><br>\n        <table style = 'width: 60%; border: 1px solid black;'>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Parameter</th>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Value</th>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Job Name</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{item().JobName}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Status</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse; color: red'>Failed</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Trigger Type</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().TriggerType}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Id</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().RunId}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Start</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{formatDateTime(pipeline().TriggerTime,'dd-MM-yyyy hh:mm:ss')}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Error</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'><b>@{activity('Load Bronze Table').output.runError}</b></td>\n            </tr>\n        </table>\n        <br><br>\n        Clever Studies\n    </body>\n</html>\n\"\n}",
+														"type": "Expression"
+													}
+												}
+											},
+											{
+												"name": "Bronze Load Fail",
+												"type": "Fail",
+												"dependsOn": [
+													{
+														"activity": "Load Bronze Table",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"message": "Bronze Table Load Failed",
+													"errorCode": "404"
+												}
+											}
+										]
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Archive Source Files",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Load Gold Table",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@take(activity('Get Metadata').output.value,6)",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Archive Source Files to Archive Location",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "SftpReadSettings",
+												"recursive": false,
+												"enablePartitionDiscovery": false,
+												"disableChunking": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "SftpWriteSettings",
+												"operationTimeout": "01:00:00",
+												"useTempFileRename": true
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DS_SFTP",
+											"type": "DatasetReference",
+											"parameters": {
+												"folder": {
+													"value": "@item().SourceFilePath",
+													"type": "Expression"
+												},
+												"file": {
+													"value": "@item().SourceFileName",
+													"type": "Expression"
+												},
+												"host": {
+													"value": "@item().HostName",
+													"type": "Expression"
+												},
+												"port": {
+													"value": "@item().Port",
+													"type": "Expression"
+												},
+												"username": {
+													"value": "@item().UserName",
+													"type": "Expression"
+												},
+												"secretname": {
+													"value": "@item().PasswordSecretName",
+													"type": "Expression"
+												},
+												"delimiter": {
+													"value": "@item().Delimiter",
+													"type": "Expression"
+												},
+												"header": {
+													"value": "@item().Header",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_SFTP",
+											"type": "DatasetReference",
+											"parameters": {
+												"folder": {
+													"value": "@item().ArchiveSourceFilePath",
+													"type": "Expression"
+												},
+												"file": {
+													"value": "@{pipeline().RunId}_@{item().ArchiveSourceFileName}",
+													"type": "Expression"
+												},
+												"host": {
+													"value": "@item().HostName",
+													"type": "Expression"
+												},
+												"port": {
+													"value": "@item().Port",
+													"type": "Expression"
+												},
+												"username": {
+													"value": "@item().UserName",
+													"type": "Expression"
+												},
+												"secretname": {
+													"value": "@item().PasswordSecretName",
+													"type": "Expression"
+												},
+												"delimiter": {
+													"value": "@item().Delimiter",
+													"type": "Expression"
+												},
+												"header": {
+													"value": "@item().Header",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "Delete Files in Source Location",
+									"type": "Delete",
+									"dependsOn": [
+										{
+											"activity": "Archive Source Files to Archive Location",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataset": {
+											"referenceName": "DS_SFTP",
+											"type": "DatasetReference",
+											"parameters": {
+												"folder": {
+													"value": "@item().SourceFilePath",
+													"type": "Expression"
+												},
+												"file": {
+													"value": "@item().SourceFileName",
+													"type": "Expression"
+												},
+												"host": {
+													"value": "@item().HostName",
+													"type": "Expression"
+												},
+												"port": {
+													"value": "@item().Port",
+													"type": "Expression"
+												},
+												"username": {
+													"value": "@item().UserName",
+													"type": "Expression"
+												},
+												"secretname": {
+													"value": "@item().PasswordSecretName",
+													"type": "Expression"
+												},
+												"delimiter": {
+													"value": "@item().Delimiter",
+													"type": "Expression"
+												},
+												"header": {
+													"value": "@item().Header",
+													"type": "Expression"
+												}
+											}
+										},
+										"enableLogging": false,
+										"storeSettings": {
+											"type": "SftpReadSettings",
+											"recursive": false,
+											"enablePartitionDiscovery": false,
+											"disableChunking": false
+										}
+									}
+								},
+								{
+									"name": "Archive File Failed Load Control Log",
+									"type": "Lookup",
+									"dependsOn": [
+										{
+											"activity": "Archive Source Files to Archive Location",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureDatabricksDeltaLakeSource",
+											"query": {
+												"value": "Insert into @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.load_control_log Values (\"@{pipeline().RunId}\",\"@{activity('Get Metadata').output.value[0].JobName}\",\"Archive failed for @{item().SourceFileName} file\",\"Error: @{activity('Archive Source Files to Archive Location').error.message}\",current_timestamp())",
+												"type": "Expression"
+											}
+										},
+										"dataset": {
+											"referenceName": "DS_ADB_DeltaLake",
+											"type": "DatasetReference",
+											"parameters": {}
+										},
+										"firstRowOnly": false
+									}
+								},
+								{
+									"name": "Archive File Failed Load Control Log_copy1",
+									"type": "Lookup",
+									"dependsOn": [
+										{
+											"activity": "Delete Files in Source Location",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureDatabricksDeltaLakeSource",
+											"query": {
+												"value": "Insert into @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.load_control_log Values (\"@{pipeline().RunId}\",\"@{activity('Get Metadata').output.value[0].JobName}\",\"Deletion of source file failed for @{item().SourceFileName} file\",\"Error: @{activity('Delete Files in Source Location').error.message}\",current_timestamp())",
+												"type": "Expression"
+											}
+										},
+										"dataset": {
+											"referenceName": "DS_ADB_DeltaLake",
+											"type": "DatasetReference",
+											"parameters": {}
+										},
+										"firstRowOnly": false
+									}
+								},
+								{
+									"name": "Archive Source File Failed Email",
+									"type": "WebActivity",
+									"dependsOn": [
+										{
+											"activity": "Archive Source Files to Archive Location",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"method": "POST",
+										"headers": {},
+										"url": {
+											"value": "@pipeline().globalParameters.email_logic_app_url",
+											"type": "Expression"
+										},
+										"body": {
+											"value": "{\n\"email_to\": \"@{pipeline().globalParameters.email_to}\",\n\"email_subject\": \"[@{toUpper(pipeline().globalParameters.environment)}][@{item().JobName}]:[Warning]\",\n\"email_body\": \"\n<html>\n    <head>\n    </head>\n    <body>\n        Hello,\n        <br><br>\n        Please find the pipeline run details below:\n        <br><br>\n        <table style = 'width: 60%; border: 1px solid black;'>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Parameter</th>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Value</th>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Job Name</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{item().JobName}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;color: orange;'>Warning</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Archival for @{item().SourceFileName} file failed</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Trigger Type</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().TriggerType}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Id</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().RunId}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Start</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{formatDateTime(pipeline().TriggerTime,'dd-MM-yyyy hh:mm:ss')}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Error</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'><b>@{activity('Archive Source Files to Archive Location').error.message}</b></td>\n            </tr>\n        </table>\n        <br><br>\n        Clever Studies\n    </body>\n</html>\n\"\n}",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "Delete Source File Failed Email",
+									"type": "WebActivity",
+									"dependsOn": [
+										{
+											"activity": "Delete Files in Source Location",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"method": "POST",
+										"headers": {},
+										"url": {
+											"value": "@pipeline().globalParameters.email_logic_app_url",
+											"type": "Expression"
+										},
+										"body": {
+											"value": "{\n\"email_to\": \"@{pipeline().globalParameters.email_to}\",\n\"email_subject\": \"[@{toUpper(pipeline().globalParameters.environment)}][@{item().JobName}]:[Warning]\",\n\"email_body\": \"\n<html>\n    <head>\n    </head>\n    <body>\n        Hello,\n        <br><br>\n        Please find the pipeline run details below:\n        <br><br>\n        <table style = 'width: 60%; border: 1px solid black;'>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Parameter</th>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Value</th>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Job Name</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{item().JobName}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;color: orange;'>Warning</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Deletion of file in source for @{item().SourceFileName} file failed</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Trigger Type</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().TriggerType}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Id</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().RunId}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Start</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{formatDateTime(pipeline().TriggerTime,'dd-MM-yyyy hh:mm:ss')}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Error</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'><b>@{activity('Delete Files in Source Location').error.message}</b></td>\n            </tr>\n        </table>\n        <br><br>\n        Clever Studies\n    </body>\n</html>\n\"\n}",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Load Silver Tables",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Load Bronze Tables",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@createArray(activity('Get Metadata').output.value[6],activity('Get Metadata').output.value[7],activity('Get Metadata').output.value[8])",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Load Silver Table",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/SalesAnalysis/TableInsertionNotebooks/LoadSilverTables",
+										"baseParameters": {
+											"database_name": {
+												"value": "@pipeline().globalParameters.database_name",
+												"type": "Expression"
+											},
+											"environment_name": {
+												"value": "@pipeline().globalParameters.environment",
+												"type": "Expression"
+											},
+											"table_name": {
+												"value": "@item().SilverTableName",
+												"type": "Expression"
+											},
+											"load_id": {
+												"value": "@pipeline().RunId",
+												"type": "Expression"
+											},
+											"job_name": {
+												"value": "@item().JobName",
+												"type": "Expression"
+											},
+											"ingestion_query": {
+												"value": "@item().SilverTableQuery",
+												"type": "Expression"
+											},
+											"load_type": {
+												"value": "@pipeline().parameters.LoadType",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "LS_ADB",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "Silver Load Failed Load Control Log",
+									"type": "Lookup",
+									"dependsOn": [
+										{
+											"activity": "Load Silver Table",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureDatabricksDeltaLakeSource",
+											"query": {
+												"value": "Insert into @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.load_control_log Values (\"@{pipeline().RunId}\",\"@{activity('Get Metadata').output.value[0].JobName}\",\"Silver table load failed for @{item().SilverTableName} table\",\"Error: @{replace(activity('Load Silver Table').output.runError,'\"','''')}\",current_timestamp())",
+												"type": "Expression"
+											}
+										},
+										"dataset": {
+											"referenceName": "DS_ADB_DeltaLake",
+											"type": "DatasetReference",
+											"parameters": {}
+										},
+										"firstRowOnly": false
+									}
+								},
+								{
+									"name": "Load Silver Table Failed Email",
+									"type": "WebActivity",
+									"dependsOn": [
+										{
+											"activity": "Load Silver Table",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"method": "POST",
+										"headers": {},
+										"url": {
+											"value": "@pipeline().globalParameters.email_logic_app_url",
+											"type": "Expression"
+										},
+										"body": {
+											"value": "{\n\"email_to\": \"@{pipeline().globalParameters.email_to}\",\n\"email_subject\": \"[@{toUpper(pipeline().globalParameters.environment)}][@{item().JobName}]:[Failed]\",\n\"email_body\": \"\n<html>\n    <head>\n    </head>\n    <body>\n        Hello,\n        <br><br>\n        Please find the pipeline run details below:\n        <br><br>\n        <table style = 'width: 60%; border: 1px solid black;'>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Parameter</th>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Value</th>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Job Name</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{item().JobName}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Status</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse; color: red'>Failed</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Trigger Type</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().TriggerType}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Id</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().RunId}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Start</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{formatDateTime(pipeline().TriggerTime,'dd-MM-yyyy hh:mm:ss')}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Error</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'><b>@{activity('Load Silver Table').output.runError}</b></td>\n            </tr>\n        </table>\n        <br><br>\n        Clever Studies\n    </body>\n</html>\n\"\n}",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "Silver Load Fail",
+									"type": "Fail",
+									"dependsOn": [
+										{
+											"activity": "Load Silver Table",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"message": "Silver Table Load Failed",
+										"errorCode": "404"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Load Gold Table",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Load Silver Tables",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/SalesAnalysis/TableInsertionNotebooks/LoadGoldTable",
+							"baseParameters": {
+								"database_name": {
+									"value": "@pipeline().globalParameters.database_name",
+									"type": "Expression"
+								},
+								"environment_name": {
+									"value": "@pipeline().globalParameters.environment",
+									"type": "Expression"
+								},
+								"table_name": {
+									"value": "@activity('Get Metadata').output.value[9].GoldTableName",
+									"type": "Expression"
+								},
+								"load_id": {
+									"value": "@pipeline().RunId",
+									"type": "Expression"
+								},
+								"job_name": {
+									"value": "@activity('Get Metadata').output.value[9].JobName",
+									"type": "Expression"
+								},
+								"ingestion_query": {
+									"value": "@activity('Get Metadata').output.value[9].GoldTableQuery",
+									"type": "Expression"
+								},
+								"load_type": {
+									"value": "@pipeline().parameters.LoadType",
+									"type": "Expression"
+								},
+								"storage_account_name": {
+									"value": "@activity('Get Metadata').output.value[9].ADLSName",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_ADB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Pipeline Started Load Control Log",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "Get Metadata",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureDatabricksDeltaLakeSource",
+								"query": {
+									"value": "Insert into @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.load_control_log Values (\"@{pipeline().RunId}\",\"@{activity('Get Metadata').output.value[0].JobName}\",\"Pipeline Started\",\"Trigger type: @{pipeline().TriggerType}; Load type: @{pipeline().parameters.LoadType}\",current_timestamp())",
+									"type": "Expression"
+								}
+							},
+							"dataset": {
+								"referenceName": "DS_ADB_DeltaLake",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "Pipeline Started Audit Log",
+						"type": "Lookup",
+						"state": "Active",
+						"onInactiveMarkAs": "Succeeded",
+						"dependsOn": [
+							{
+								"activity": "Get Metadata",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureDatabricksDeltaLakeSource",
+								"query": {
+									"value": "Insert into @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.audit_log Values (\"@{pipeline().RunId}\",@{pipeline().parameters.JobID},\"@{activity('Get Metadata').output.value[0].JobName}\",\"Started\",\"@{pipeline().TriggerType}\",\"@{pipeline().TriggerTime}\",null,null,\"@{activity('Get Metadata').output.value[9].GoldTableName}\",\"JobID: @{pipeline().parameters.JobID}; LoadType: @{pipeline().parameters.LoadType}\")",
+									"type": "Expression"
+								}
+							},
+							"dataset": {
+								"referenceName": "DS_ADB_DeltaLake",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "Pipeline Started Email",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "Get Metadata",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "POST",
+							"headers": {},
+							"url": {
+								"value": "@pipeline().globalParameters.email_logic_app_url",
+								"type": "Expression"
+							},
+							"connectVia": {
+								"referenceName": "CleverStudiesSHIR",
+								"type": "IntegrationRuntimeReference"
+							},
+							"body": {
+								"value": "{\n\"email_to\": \"@{pipeline().globalParameters.email_to}\",\n\"email_subject\": \"[@{toUpper(pipeline().globalParameters.environment)}][@{activity('Get Metadata').output.value[0].JobName}]:[Started]\",\n\"email_body\": \"\n<html>\n    <head>\n    </head>\n    <body>\n        Hello,\n        <br><br>\n        Please find the pipeline run details below:\n        <br><br>\n        <table style = 'width: 60%; border: 1px solid black;'>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Parameter</th>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Value</th>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Job Name</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{activity('Get Metadata').output.value[0].JobName}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Status</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse; color: orange'><b>Started</b></td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Trigger Type</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().TriggerType}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Id</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().RunId}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Start</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{formatDateTime(pipeline().TriggerTime,'dd-MM-yyyy hh:mm:ss')}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Load Type</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().parameters.LoadType}</td>\n            </tr>\n        </table>\n        <br><br>\n        Clever Studies\n    </body>\n</html>\n\"\n}",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Pipeline Successful Audit Log",
+						"type": "Lookup",
+						"state": "Active",
+						"onInactiveMarkAs": "Succeeded",
+						"dependsOn": [
+							{
+								"activity": "Archive Source Files",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureDatabricksDeltaLakeSource",
+								"query": {
+									"value": "Update @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.audit_log set Status = \"Successful\", JobEnd = current_timestamp(), Duration = SUBSTRING(cast(timediff(second, \"@{pipeline().TriggerTime}\", current_timestamp()) as timestamp), 11) where LoadID = \"@{pipeline().RunId}\"",
+									"type": "Expression"
+								}
+							},
+							"dataset": {
+								"referenceName": "DS_ADB_DeltaLake",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "Pipeline Successful Load Control Log",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "Archive Source Files",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureDatabricksDeltaLakeSource",
+								"query": {
+									"value": "Insert into @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.load_control_log Values (\"@{pipeline().RunId}\",\"@{activity('Get Metadata').output.value[0].JobName}\",\"Pipeline Completed\",\"Successful\",current_timestamp())",
+									"type": "Expression"
+								}
+							},
+							"dataset": {
+								"referenceName": "DS_ADB_DeltaLake",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "Pipeline Successful Email",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "Archive Source Files",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "POST",
+							"headers": {},
+							"url": {
+								"value": "@pipeline().globalParameters.email_logic_app_url",
+								"type": "Expression"
+							},
+							"connectVia": {
+								"referenceName": "CleverStudiesSHIR",
+								"type": "IntegrationRuntimeReference"
+							},
+							"body": {
+								"value": "{\n\"email_to\": \"@{pipeline().globalParameters.email_to}\",\n\"email_subject\": \"[@{toUpper(pipeline().globalParameters.environment)}][@{activity('Get Metadata').output.value[0].JobName}]:[Successful]\",\n\"email_body\": \"\n<html>\n    <head>\n    </head>\n    <body>\n        Hello,\n        <br><br>\n        Please find the pipeline run details below:\n        <br><br>\n        <table style = 'width: 60%; border: 1px solid black;'>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Parameter</th>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Value</th>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Job Name</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{activity('Get Metadata').output.value[0].JobName}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Status</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse; color: green'><b>Successful</b></td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Trigger Type</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().TriggerType}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Id</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().RunId}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Start</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{formatDateTime(pipeline().TriggerTime,'dd-MM-yyyy hh:mm:ss')}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run End</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{formatDateTime(utcNow(),'dd-MM-yyyy hh:mm:ss')}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Load Type</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().parameters.LoadType}</td>\n            </tr>\n        </table>\n        <br><br>\n        Clever Studies\n    </body>\n</html>\n\"\n}",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Bronze Load Failed Audit Log",
+						"type": "Lookup",
+						"state": "Active",
+						"onInactiveMarkAs": "Succeeded",
+						"dependsOn": [
+							{
+								"activity": "Load Bronze Tables",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureDatabricksDeltaLakeSource",
+								"query": {
+									"value": "Update @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.audit_log set Status = \"Failed\", JobEnd = current_timestamp(), Duration = SUBSTRING(cast(timediff(second, \"@{pipeline().TriggerTime}\", current_timestamp()) as timestamp), 11) where LoadID = \"@{pipeline().RunId}\"",
+									"type": "Expression"
+								}
+							},
+							"dataset": {
+								"referenceName": "DS_ADB_DeltaLake",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "Silver Load Failed Audit Log",
+						"type": "Lookup",
+						"state": "Active",
+						"onInactiveMarkAs": "Succeeded",
+						"dependsOn": [
+							{
+								"activity": "Load Silver Tables",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureDatabricksDeltaLakeSource",
+								"query": {
+									"value": "Update @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.audit_log set Status = \"Failed\", JobEnd = current_timestamp(), Duration = SUBSTRING(cast(timediff(second, \"@{pipeline().TriggerTime}\", current_timestamp()) as timestamp), 11) where LoadID = \"@{pipeline().RunId}\"",
+									"type": "Expression"
+								}
+							},
+							"dataset": {
+								"referenceName": "DS_ADB_DeltaLake",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "Gold Load Failed Audit Log",
+						"type": "Lookup",
+						"state": "Active",
+						"onInactiveMarkAs": "Succeeded",
+						"dependsOn": [
+							{
+								"activity": "Load Gold Table",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureDatabricksDeltaLakeSource",
+								"query": {
+									"value": "Update @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.audit_log set Status = \"Failed\", JobEnd = current_timestamp(), Duration = SUBSTRING(cast(timediff(second, \"@{pipeline().TriggerTime}\", current_timestamp()) as timestamp), 11) where LoadID = \"@{pipeline().RunId}\"",
+									"type": "Expression"
+								}
+							},
+							"dataset": {
+								"referenceName": "DS_ADB_DeltaLake",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "Pipeline Start Failed Email",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "Get Metadata",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "POST",
+							"headers": {},
+							"url": {
+								"value": "@pipeline().globalParameters.email_logic_app_url",
+								"type": "Expression"
+							},
+							"connectVia": {
+								"referenceName": "CleverStudiesSHIR",
+								"type": "IntegrationRuntimeReference"
+							},
+							"body": {
+								"value": "{\n\"email_to\": \"@{pipeline().globalParameters.email_to}\",\n\"email_subject\": \"[@{toUpper(pipeline().globalParameters.environment)}][@{pipeline().parameters.JobID}]:[Failed]\",\n\"email_body\": \"\n<html>\n    <head>\n    </head>\n    <body>\n        Hello,\n        <br><br>\n        Please find the pipeline run details below:\n        <br><br>\n        <table style = 'width: 60%; border: 1px solid black;'>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Parameter</th>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Value</th>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Job ID</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().parameters.JobID}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Status</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse; color: red;'><b>Failed</b></td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Trigger Type</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().TriggerType}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Id</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().RunId}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Start</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{formatDateTime(pipeline().TriggerTime,'dd-MM-yyyy hh:mm:ss')}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Load Type</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().parameters.LoadType}</td>\n            </tr>\n        </table>\n        <br><br>\n        Clever Studies\n    </body>\n</html>\n\"\n}",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Gold Table Load Failed Email",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "Load Gold Table",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "POST",
+							"headers": {},
+							"url": {
+								"value": "@pipeline().globalParameters.email_logic_app_url",
+								"type": "Expression"
+							},
+							"body": {
+								"value": "{\n\"email_to\": \"@{pipeline().globalParameters.email_to}\",\n\"email_subject\": \"[@{toUpper(pipeline().globalParameters.environment)}][@{activity('Get Metadata').output.value[0].JobName}]:[Failed]\",\n\"email_body\": \"\n<html>\n    <head>\n    </head>\n    <body>\n        Hello,\n        <br><br>\n        Please find the pipeline run details below:\n        <br><br>\n        <table style = 'width: 60%; border: 1px solid black;'>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Parameter</th>\n                <th style = 'border: 1px solid black; border-collapse: collapse; background-color: LightGray'>Value</th>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Job Name</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{activity('Get Metadata').output.value[0].JobName}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Status</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse; color: red'>Failed</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Trigger Type</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().TriggerType}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Id</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{pipeline().RunId}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Run Start</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>@{formatDateTime(pipeline().TriggerTime,'dd-MM-yyyy hh:mm:ss')}</td>\n            </tr>\n            <tr style = 'border: 1px solid black; border-collapse: collapse;'>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'>Error</td>\n                <td style = 'border: 1px solid black; border-collapse: collapse;'><b>@{activity('Load Gold Table').output.runError}</b></td>\n            </tr>\n        </table>\n        <br><br>\n        Clever Studies\n    </body>\n</html>\n\"\n}",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Gold Load Failed Load Control Log",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "Load Gold Table",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureDatabricksDeltaLakeSource",
+								"query": {
+									"value": "Insert into @{pipeline().globalParameters.database_name}.@{pipeline().globalParameters.environment}_metadata.load_control_log Values (\"@{pipeline().RunId}\",\"@{activity('Get Metadata').output.value[0].JobName}\",\"Gold table load failed\",\"Error: @{replace(activity('Load Gold Table').output.runError,'\"','''')}\",current_timestamp())",
+									"type": "Expression"
+								}
+							},
+							"dataset": {
+								"referenceName": "DS_ADB_DeltaLake",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"JobID": {
+						"type": "int"
+					},
+					"LoadType": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "SalesAnalysis"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-08-26T12:56:05Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DS_ADB_DeltaLake')]",
+				"[concat(variables('factoryId'), '/linkedServices/LS_ADB')]",
+				"[concat(variables('factoryId'), '/integrationRuntimes/CleverStudiesSHIR')]",
+				"[concat(variables('factoryId'), '/datasets/DS_SFTP')]",
+				"[concat(variables('factoryId'), '/datasets/DS_ADLS_SalesAnalysis')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_SetUpTables')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Create Schemas",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/SalesAnalysis/CreateTablesAndSchemas/CreateSchemas",
+							"baseParameters": {
+								"environment_name": {
+									"value": "@pipeline().globalParameters.environment",
+									"type": "Expression"
+								},
+								"database_name": {
+									"value": "@pipeline().globalParameters.database_name",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_ADB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Create Tables",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Create Schemas",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/SalesAnalysis/CreateTablesAndSchemas/CreateTables",
+							"baseParameters": {
+								"environment_name": {
+									"value": "@pipeline().globalParameters.environment",
+									"type": "Expression"
+								},
+								"database_name": {
+									"value": "@pipeline().globalParameters.database_name",
+									"type": "Expression"
+								},
+								"storage_account_name": {
+									"value": "@pipeline().parameters.storage_account_name",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_ADB",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Insert Metadata",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Create Tables",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/SalesAnalysis/TableInsertionNotebooks/MetadataInsert",
+							"baseParameters": {
+								"environment_name": {
+									"value": "@pipeline().globalParameters.environment",
+									"type": "Expression"
+								},
+								"database_name": {
+									"value": "@pipeline().globalParameters.database_name",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_ADB",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"storage_account_name": {
+						"type": "string",
+						"defaultValue": "cleverstudiesadls"
+					}
+				},
+				"folder": {
+					"name": "SalesAnalysis"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-08-24T19:13:58Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_ADB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_ADB_DeltaLake')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_ADB_DeltaLake",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureDatabricksDeltaLakeDataset",
+				"typeProperties": {},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_ADB_DeltaLake')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_ADLS')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_ADLS",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_ADLS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_ADLS_SalesAnalysis')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_ADLS",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"container": {
+						"type": "string"
+					},
+					"folder": {
+						"type": "string"
+					},
+					"file": {
+						"type": "string"
+					},
+					"header": {
+						"type": "bool"
+					},
+					"delimiter": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@dataset().file",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().folder",
+							"type": "Expression"
+						},
+						"container": {
+							"value": "@dataset().container",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": {
+						"value": "@dataset().delimiter",
+						"type": "Expression"
+					},
+					"escapeChar": "\\",
+					"firstRowAsHeader": {
+						"value": "@dataset().header",
+						"type": "Expression"
+					},
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_ADLS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_SFTP')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SFTP",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"host": {
+							"value": "@dataset().host",
+							"type": "Expression"
+						},
+						"port": {
+							"value": "@dataset().port",
+							"type": "Expression"
+						},
+						"username": {
+							"value": "@dataset().username",
+							"type": "Expression"
+						},
+						"secretname": {
+							"value": "@dataset().secretname",
+							"type": "Expression"
+						}
+					}
+				},
+				"parameters": {
+					"folder": {
+						"type": "string"
+					},
+					"file": {
+						"type": "string"
+					},
+					"host": {
+						"type": "string"
+					},
+					"port": {
+						"type": "int"
+					},
+					"username": {
+						"type": "string"
+					},
+					"secretname": {
+						"type": "string"
+					},
+					"delimiter": {
+						"type": "string"
+					},
+					"header": {
+						"type": "bool"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "SftpLocation",
+						"fileName": {
+							"value": "@dataset().file",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().folder",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": {
+						"value": "@dataset().delimiter",
+						"type": "Expression"
+					},
+					"escapeChar": "\\",
+					"firstRowAsHeader": {
+						"value": "@dataset().header",
+						"type": "Expression"
+					},
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SFTP')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_ADB')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-687061496925936.16.azuredatabricks.net",
+					"accessToken": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "LS_KeyVault",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "ADB-PAT-Token"
+					},
+					"existingClusterId": "[parameters('LS_ADB_properties_typeProperties_existingClusterId')]"
+				},
+				"connectVia": {
+					"referenceName": "CleverStudiesSHIR",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/CleverStudiesSHIR')]",
+				"[concat(variables('factoryId'), '/linkedServices/LS_KeyVault')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_ADB_DeltaLake')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricksDeltaLake",
+				"typeProperties": {
+					"domain": "https://adb-687061496925936.16.azuredatabricks.net",
+					"clusterId": "0809-185342-fc81fwfy",
+					"accessToken": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "LS_KeyVault",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "ADB-PAT-Token"
+					}
+				},
+				"connectVia": {
+					"referenceName": "CleverStudiesSHIR",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/CleverStudiesSHIR')]",
+				"[concat(variables('factoryId'), '/linkedServices/LS_KeyVault')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_ADLS')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('LS_ADLS_connectionString')]",
+					"accountKey": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "LS_KeyVault",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "ADLS-Access-Key"
+					}
+				},
+				"connectVia": {
+					"referenceName": "CleverStudiesSHIR",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/CleverStudiesSHIR')]",
+				"[concat(variables('factoryId'), '/linkedServices/LS_KeyVault')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_KeyVault')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('LS_KeyVault_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_SFTP')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"parameters": {
+					"host": {
+						"type": "string"
+					},
+					"port": {
+						"type": "int"
+					},
+					"username": {
+						"type": "string"
+					},
+					"secretname": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Sftp",
+				"typeProperties": {
+					"host": "[parameters('LS_SFTP_properties_typeProperties_host')]",
+					"port": "@linkedService().port",
+					"skipHostKeyValidation": true,
+					"authenticationType": "Basic",
+					"userName": "[parameters('LS_SFTP_properties_typeProperties_userName')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "LS_KeyVault",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": {
+							"value": "@linkedService().secretname",
+							"type": "Expression"
+						}
+					}
+				},
+				"connectVia": {
+					"referenceName": "CleverStudiesSHIR",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/CleverStudiesSHIR')]",
+				"[concat(variables('factoryId'), '/linkedServices/LS_KeyVault')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CleverStudiesSHIR')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "SelfHosted",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		}
+	]
+}

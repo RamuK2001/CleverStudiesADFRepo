@@ -1,0 +1,18 @@
+{
+	"email_logic_app_url": {
+		"type": "string",
+		"value": "https://prod-49.eastus2.logic.azure.com:443/workflows/1288f9e73b1f4570adb5c15655184320/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=GyAtW5RRwdTtATrQYQoSo3TC_N_o2bXc1LiRWuKiUVg"
+	},
+	"environment": {
+		"type": "string",
+		"value": "dev"
+	},
+	"email_to": {
+		"type": "string",
+		"value": "ramukarnati2001@gmail.com"
+	},
+	"database_name": {
+		"type": "string",
+		"value": "cleverstudiesadb"
+	}
+}
